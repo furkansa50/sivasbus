@@ -202,6 +202,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             IgnorePointer(
               child: FlutterMap(
+                key: ValueKey('map_${validStops.length}'),
                 options: MapOptions(
                   initialCenter: _userLocation ?? _centerSivas,
                   initialZoom: 13.0,
