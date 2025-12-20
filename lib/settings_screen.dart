@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sivastopus/app_state.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:sivastopus/constants.dart';
 
-class SettingsScreen extends StatelessWidget {
+import 'package:sivastopus/constants.dart';
+import 'dart:async';
+
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
-  // Softer, muted color palette - 12 colors for 2x6 grid
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  int _darkTapCount = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -17,8 +23,69 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Ayarlar')),
       body: ListView(
         children: [
+          _buildSectionHeader(context, 'Görünüm'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                SegmentedButton<ThemeMode>(
+                  segments: [
+                    const ButtonSegment<ThemeMode>(
+                      value: ThemeMode.system,
+                      label: Text('Sistem'),
+                      icon: Icon(Icons.brightness_auto),
+                    ),
+                    const ButtonSegment<ThemeMode>(
+                      value: ThemeMode.light,
+                      label: Text('Aydınlık'),
+                      icon: Icon(Icons.wb_sunny),
+                    ),
+                    ButtonSegment<ThemeMode>(
+                      value: ThemeMode.dark,
+                      label: GestureDetector(
+                        onTap: () {
+                          if (appState.themeMode == ThemeMode.dark) {
+                            setState(() {
+                              _darkTapCount++;
+                            });
+                          } else {
+                            appState.setThemeMode(ThemeMode.dark);
+                          }
+                        },
+                        child: const Text('Karanlık'),
+                      ),
+                      icon: const Icon(Icons.nightlight_round),
+                    ),
+                  ],
+                  selected: {appState.themeMode},
+                  onSelectionChanged: (Set<ThemeMode> newSelection) {
+                    appState.setThemeMode(newSelection.first);
+                    // Reset tap count on mode change
+                    if (newSelection.first != ThemeMode.dark) {
+                      setState(() {
+                        _darkTapCount = 0;
+                      });
+                    }
+                  },
+                ),
+                if ((appState.isAmoledMode || _darkTapCount >= 3) &&
+                    appState.themeMode == ThemeMode.dark) ...[
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text('AMOLED Karanlığı'),
+                    subtitle: const Text('Tam siyah tema'),
+                    value: appState.isAmoledMode,
+                    activeColor: Colors.white,
+                    activeTrackColor: Colors.grey,
+                    onChanged: (val) => appState.setAmoledMode(val),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           _buildSectionHeader(context, 'Tema Rengi'),
-          // Inline color picker - 2x6 grid
+          // Inline color picker - 1x6 grid (simplified from 2x6)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: GridView.builder(
@@ -96,13 +163,38 @@ class SettingsScreen extends StatelessWidget {
           _buildSectionHeader(context, 'Hakkında'),
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: const Text('Daha İyi Sivas Akıllı Duraklar'),
+            title: const Text('Sivas Akıllı Durak'),
             subtitle: const Text('furkansa50 tarafından geliştirildi'),
-            onTap: () => _showAboutDialog(context),
+            onTap: () => _handleAboutTap(context),
           ),
         ],
       ),
     );
+  }
+
+  int _aboutTapCount = 0;
+  Timer? _aboutTapTimer;
+
+  void _handleAboutTap(BuildContext context) {
+    _aboutTapCount++;
+    if (_aboutTapTimer != null) {
+      _aboutTapTimer!.cancel();
+    }
+    _aboutTapTimer = Timer(const Duration(milliseconds: 500), () {
+      _aboutTapCount = 0;
+    });
+
+    if (_aboutTapCount >= 3) {
+      _aboutTapCount = 0;
+      if (_aboutTapTimer != null) {
+        _aboutTapTimer!.cancel();
+      }
+      showLicensePage(
+        context: context,
+        applicationName: 'Sivas Akıllı Durak',
+        applicationVersion: '1.0.0',
+      );
+    }
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
@@ -114,88 +206,6 @@ class SettingsScreen extends StatelessWidget {
           color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.bold,
           fontSize: 14,
-        ),
-      ),
-    );
-  }
-
-  void _showAboutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Logo
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SvgPicture.asset(
-                  'assets/sivas_belediyesi_logo.svg',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.contain,
-                  placeholderBuilder: (context) => Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      Icons.directions_bus,
-                      size: 50,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Sivas Akıllı Durak',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Versiyon 1.0.0',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Geliştirici: furkansa50',
-                style: TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Sivas Belediyesi Akıllı Durak verilerini kullanarak\notobüs varış sürelerini gösteren uygulama.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextButton(
-                    onPressed: () => showLicensePage(
-                      context: context,
-                      applicationName: 'Sivas Akıllı Durak',
-                      applicationVersion: '1.0.0',
-                    ),
-                    child: const Text('Lisanslar'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Kapat'),
-                  ),
-                ],
-              ),
-            ],
-          ),
         ),
       ),
     );

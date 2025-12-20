@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:sivastopus/sivas_bus_service.dart';
 import 'package:provider/provider.dart';
@@ -83,31 +82,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               flexibleSpace: FlexibleSpaceBar(
                 centerTitle: true,
                 titlePadding: const EdgeInsets.only(bottom: 16),
-                title: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: SvgPicture.asset(
-                        'assets/sivas_belediyesi_logo.svg',
-                        width: 32,
-                        height: 32,
-                        fit: BoxFit.contain,
-                        placeholderBuilder: (context) =>
-                            const SizedBox(width: 32, height: 32),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Daha İyi Sivas Akıllı Duraklar',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                title: const Text(
+                  'Sivas Akıllı Duraklar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
+                    color: Colors.white,
+                  ),
                 ),
                 background: Container(
                   color: Color.lerp(
@@ -124,41 +106,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  // Map Preview Section
-                  _buildMapPreview(context, stops),
-
                   const SizedBox(height: 16),
 
-                  // Nearby Stops Section
-                  _buildSectionHeader(
-                    context,
-                    'Yakındaki Duraklar',
-                    () => widget.onNavigateToTab(1),
-                  ),
-                  if (nearbyStops.isNotEmpty)
-                    ...nearbyStops.map(
-                      (stop) => _buildStopCard(context, stop, true),
+                  // Empty State / Loading Handling
+                  if (stops.isEmpty)
+                    if (appState.isLoadingStops)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Duraklar yüklenemedi.',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 16),
+                            FilledButton.icon(
+                              onPressed: _refreshData,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Tekrar Dene'),
+                            ),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
+                      )
+                  else ...[
+                    // Map Preview Section
+                    _buildMapPreview(context, stops),
+
+                    const SizedBox(height: 16),
+
+                    // Nearby Stops Section
+                    _buildSectionHeader(
+                      context,
+                      'Yakındaki Duraklar',
+                      () => widget.onNavigateToTab(1),
                     ),
-                  if (nearbyStops.isEmpty && appState.isLoadingStops)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(),
+                    if (nearbyStops.isNotEmpty)
+                      ...nearbyStops.map(
+                        (stop) => _buildStopCard(context, stop, true),
                       ),
-                    ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  // All Stops Section
-                  _buildSectionHeader(
-                    context,
-                    'Tüm Duraklar',
-                    () => widget.onNavigateToTab(1),
-                  ),
-                  if (allStopsPreview.isNotEmpty)
-                    ...allStopsPreview.map(
-                      (stop) => _buildStopCard(context, stop, false),
+                    // All Stops Section
+                    _buildSectionHeader(
+                      context,
+                      'Tüm Duraklar',
+                      () => widget.onNavigateToTab(1),
                     ),
+                    if (allStopsPreview.isNotEmpty)
+                      ...allStopsPreview.map(
+                        (stop) => _buildStopCard(context, stop, false),
+                      ),
+                  ],
 
                   const SizedBox(height: 32),
                 ],
@@ -171,7 +184,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _refreshData() async {
-    await context.read<AppState>().loadStops();
+    await context.read<AppState>().loadStops(forceRefresh: true);
   }
 
   Widget _buildMapPreview(BuildContext context, List<SmartStop> stops) {
@@ -209,8 +222,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate: Theme.of(context).brightness == Brightness.dark
+                        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                    subdomains: const ['a', 'b', 'c'],
                     userAgentPackageName: 'com.example.sivastopus',
                   ),
                   MarkerLayer(
@@ -230,18 +245,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ...validStops.map(
                         (stop) => Marker(
                           point: LatLng(stop.lat, stop.lng),
-                          width: 24,
-                          height: 24,
+                          width: 20,
+                          height: 20,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Theme.of(context).colorScheme.primary,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 1),
+                              border: Border.all(
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.grey[600]!
+                                    : Colors.white,
+                                width: 1,
+                              ),
                             ),
                             child: const Icon(
                               Icons.directions_bus,
                               color: Colors.white,
-                              size: 14,
+                              size: 12,
                             ),
                           ),
                         ),
@@ -337,9 +363,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       elevation: 0,
-      color: Theme.of(
-        context,
-      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      color: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF333333)
+          : Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: CircleAvatar(

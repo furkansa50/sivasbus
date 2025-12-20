@@ -129,19 +129,25 @@ class _SmartStopsScreenState extends State<SmartStopsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sivas Akıllı Duraklar'),
+        centerTitle: true,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
+          preferredSize: const Size.fromHeight(70),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: SearchBar(
               controller: _searchController,
               hintText: 'Durak ara...',
-              leading: const Icon(Icons.search),
-              elevation: WidgetStateProperty.all(1.0),
-              backgroundColor: WidgetStateProperty.all(
-                Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              leading: const Icon(Icons.search, color: Colors.grey),
+              elevation: WidgetStateProperty.all(0),
+              backgroundColor: WidgetStateProperty.all(const Color(0xFF333333)),
+              shape: WidgetStateProperty.all(const StadiumBorder()),
+              side: WidgetStateProperty.all(BorderSide.none),
+              overlayColor: WidgetStateProperty.all(Colors.transparent),
+              textStyle: WidgetStateProperty.all(
+                const TextStyle(color: Colors.white),
+              ),
+              hintStyle: WidgetStateProperty.all(
+                const TextStyle(color: Colors.grey),
               ),
             ),
           ),
@@ -160,7 +166,7 @@ class _SmartStopsScreenState extends State<SmartStopsScreen> {
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: () {
-                      context.read<AppState>().loadStops();
+                      context.read<AppState>().loadStops(forceRefresh: true);
                     },
                     child: const Text('Yenile'),
                   ),
@@ -211,9 +217,11 @@ class _SmartStopsScreenState extends State<SmartStopsScreen> {
                     vertical: 4,
                   ),
                   elevation: 0,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF333333)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SmartStop {
   final String id;
@@ -9,6 +10,22 @@ class SmartStop {
   final double lng;
 
   SmartStop({required this.id, required this.name, this.lat = 0, this.lng = 0});
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'lat': lat,
+    'lng': lng,
+  };
+
+  factory SmartStop.fromJson(Map<String, dynamic> json) {
+    return SmartStop(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      lat: (json['lat'] as num).toDouble(),
+      lng: (json['lng'] as num).toDouble(),
+    );
+  }
 
   @override
   String toString() => 'SmartStop(id: $id, name: $name)';
@@ -33,9 +50,32 @@ class SivasBusService {
   static const String _baseUrl = 'https://ulasim.sivas.bel.tr';
   static const String _mapUrl = '$_baseUrl/Akilli-Duraklar-Harita';
 
-  Future<List<SmartStop>> fetchSmartStops() async {
+  Future<List<SmartStop>> fetchSmartStops({bool forceRefresh = false}) async {
     try {
-      final response = await http.get(Uri.parse(_mapUrl));
+      final prefs = await SharedPreferences.getInstance();
+      const cacheKey = 'cached_stops';
+
+      if (!forceRefresh) {
+        final cachedData = prefs.getString(cacheKey);
+        if (cachedData != null) {
+          try {
+            final List<dynamic> decoded = jsonDecode(cachedData);
+            final cachedStops = decoded
+                .map((e) => SmartStop.fromJson(e))
+                .toList();
+            if (cachedStops.isNotEmpty) {
+              debugPrint('Loaded ${cachedStops.length} stops from cache');
+              return cachedStops;
+            }
+          } catch (e) {
+            debugPrint('Error parsing cached stops: $e');
+          }
+        }
+      }
+
+      final response = await http
+          .get(Uri.parse(_mapUrl))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) {
         throw Exception('Failed to load stops: ${response.statusCode}');
       }
@@ -48,6 +88,9 @@ class SivasBusService {
 
       if (duraksMatch == null) {
         debugPrint('Could not find duraks variable in HTML');
+        if (!forceRefresh)
+          return []; // If we failed to fetch and didn't force, maybe return empty or cached from before?
+        // Actually if we are here we failed to fetch new data.
         return [];
       }
 
@@ -77,10 +120,17 @@ class SivasBusService {
         }
       }
 
+      // Save to cache
+      if (stops.isNotEmpty) {
+        final jsonString = jsonEncode(stops.map((e) => e.toJson()).toList());
+        await prefs.setString(cacheKey, jsonString);
+        debugPrint('Saved ${stops.length} stops to cache');
+      }
+
       return stops;
     } catch (e) {
       debugPrint('Error fetching stops: $e');
-      return [];
+      return []; // Optionally return cached data here if available as fallback, but for now empty
     }
   }
 

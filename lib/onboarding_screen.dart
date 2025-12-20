@@ -58,6 +58,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -73,11 +74,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   _buildWelcomePage(),
                   _buildPermissionPage(),
-                  _buildPersonalizationPage(),
+                  _buildPersonalizationPage(appState),
                 ],
               ),
             ),
-            _buildBottomControls(),
+            _buildBottomControls(appState),
           ],
         ),
       ),
@@ -93,7 +94,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: SvgPicture.asset(
-              'assets/sivas_belediyesi_logo.svg',
+              'assets/app_logo.svg',
               width: 120,
               height: 120,
               fit: BoxFit.contain,
@@ -172,9 +173,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildPersonalizationPage() {
-    final appState = context.watch<AppState>();
-
+  Widget _buildPersonalizationPage(AppState appState) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -190,12 +189,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            'Uygulama temasını seçin. "Sivas Kırmızısı" efsanevi rengimizdir.',
-            style: Theme.of(context).textTheme.bodyLarge,
-            textAlign: TextAlign.center,
+            'Görünüm Modunu Seçin',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 8),
+          SegmentedButton<ThemeMode>(
+            segments: const [
+              ButtonSegment<ThemeMode>(
+                value: ThemeMode.system,
+                label: Text('Sistem'),
+                icon: Icon(Icons.brightness_auto),
+              ),
+              ButtonSegment<ThemeMode>(
+                value: ThemeMode.light,
+                label: Text('Aydınlık'),
+                icon: Icon(Icons.wb_sunny),
+              ),
+              ButtonSegment<ThemeMode>(
+                value: ThemeMode.dark,
+                label: Text('Karanlık'),
+                icon: Icon(Icons.nightlight_round),
+              ),
+            ],
+            selected: {appState.themeMode},
+            onSelectionChanged: (Set<ThemeMode> newSelection) {
+              appState.setThemeMode(newSelection.first);
+            },
+          ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 16),
+          Text(
+            'Uygulama Temasını Seçin',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 16),
           Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -220,7 +250,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         shape: BoxShape.circle,
                         border: isSelected
                             ? Border.all(
-                                color: Theme.of(context).primaryColor,
+                                color: color.computeLuminance() > 0.5
+                                    ? Colors.black
+                                    : Colors.white,
                                 width: 3,
                               )
                             : Border.all(color: Colors.grey.shade300, width: 1),
@@ -234,7 +266,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ],
                       ),
                       child: isSelected
-                          ? const Icon(Icons.check, color: Colors.white)
+                          ? Icon(
+                              Icons.check,
+                              color: color.computeLuminance() > 0.5
+                                  ? Colors.black
+                                  : Colors.white,
+                            )
                           : null,
                     ),
                   ),
@@ -246,9 +283,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.normal,
-                      color: isSelected
-                          ? Theme.of(context).primaryColor
-                          : Colors.grey,
+                      color: isSelected ? appState.accentColor : Colors.grey,
                     ),
                   ),
                 ],
@@ -260,7 +295,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildBottomControls() {
+  Widget _buildBottomControls(AppState appState) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Row(
@@ -279,7 +314,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           else
             const SizedBox(width: 64), // Balance spacing
 
-          Row(children: List.generate(3, (index) => _buildDot(index))),
+          Row(
+            children: List.generate(3, (index) => _buildDot(index, appState)),
+          ),
 
           if (_currentPage < 2)
             TextButton(
@@ -294,6 +331,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           else
             ElevatedButton(
               onPressed: _completeOnboarding,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: appState.accentColor,
+                foregroundColor: appState.accentColor.computeLuminance() > 0.5
+                    ? Colors.black
+                    : Colors.white,
+              ),
               child: const Text('Başla'),
             ),
         ],
@@ -301,16 +344,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildDot(int index) {
-    return Container(
+  Widget _buildDot(int index, AppState appState) {
+    final bool isActive = _currentPage == index;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: _currentPage == index ? 12 : 8,
+      width: isActive ? 24 : 8,
       height: 8,
       decoration: BoxDecoration(
-        color: _currentPage == index
-            ? Theme.of(context).primaryColor
-            : Colors.grey.shade300,
+        color: isActive ? appState.accentColor : Colors.grey.shade400,
         borderRadius: BorderRadius.circular(4),
+        boxShadow: [
+          if (isActive)
+            BoxShadow(
+              color: appState.accentColor.withOpacity(0.4),
+              blurRadius: 4,
+              spreadRadius: 1,
+            ),
+        ],
       ),
     );
   }

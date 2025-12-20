@@ -7,26 +7,10 @@ const String appVersion = '1.0.0';
 
 // App Colors
 const List<Map<String, dynamic>> appColors = [
-  {
-    'name': 'Sivas Kırmızısı',
-    'color': Color(0xFFD32F2F),
-  }, // Material Red 700 - Vibrant Red
-  {
-    'name': 'Yiğido Kırmızısı',
-    'color': Color(0xFFB71C1C),
-  }, // Darker Red for varity
-  {'name': 'Gökyüzü Mavisi', 'color': Colors.blue},
-  {'name': 'Doğa Yeşili', 'color': Colors.green},
-  {'name': 'Güneş Sarısı', 'color': Colors.orange},
-  {'name': 'Gece Siyahı', 'color': Colors.black},
-  {'name': 'Sultan Moru', 'color': Colors.purple},
-  {'name': 'Sivas', 'color': Color(0xFFB85450)}, // Soft red (from settings)
-  {'name': 'Orman', 'color': Color(0xFF6A9C78)}, // Soft green
-  {'name': 'Lavanta', 'color': Color(0xFF8B7BB5)}, // Soft purple
-  {'name': 'Günbatımı', 'color': Color(0xFFD4A574)}, // Soft orange
-  {'name': 'Okyanus', 'color': Color(0xFF5F9EA0)}, // Soft teal
-  {'name': 'Altın', 'color': Color(0xFFB8A861)}, // Soft gold
-  {'name': 'Mercan', 'color': Color(0xFFCD8B76)}, // Soft coral
-  {'name': 'Nane', 'color': Color(0xFF7EB5A6)}, // Soft mint
-  {'name': 'Erik', 'color': Color(0xFF9B6B8E)}, // Soft plum
+  {'name': 'Siyah', 'color': Color(0xFF121212)}, // Dark/Black
+  {'name': 'Kırmızı', 'color': Color(0xFFE57373)}, // Soft Red
+  {'name': 'Mavi', 'color': Color(0xFF64B5F6)}, // Soft Blue
+  {'name': 'Yeşil', 'color': Color(0xFF81C784)}, // Soft Green
+  {'name': 'Turuncu', 'color': Color(0xFFFFB74D)}, // Soft Orange
+  {'name': 'Mor', 'color': Color(0xFFBA68C8)}, // Soft Purple
 ];

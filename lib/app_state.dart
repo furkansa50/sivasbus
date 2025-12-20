@@ -20,6 +20,11 @@ class AppState extends ChangeNotifier {
       _accentColor = Color(colorValue);
     }
     _refreshRate = prefs.getInt('refreshRate') ?? 60;
+    final themeIndex = prefs.getInt('themeMode');
+    if (themeIndex != null) {
+      _themeMode = ThemeMode.values[themeIndex];
+    }
+    _isAmoledMode = prefs.getBool('isAmoledMode') ?? false;
     notifyListeners();
   }
 
@@ -37,13 +42,13 @@ class AppState extends ChangeNotifier {
   List<SmartStop> get stops => _stops;
   bool get isLoadingStops => _isLoadingStops;
 
-  Future<void> loadStops() async {
+  Future<void> loadStops({bool forceRefresh = false}) async {
     if (_isLoadingStops) return;
     _isLoadingStops = true;
     notifyListeners();
 
     try {
-      _stops = await _service.fetchSmartStops();
+      _stops = await _service.fetchSmartStops(forceRefresh: forceRefresh);
     } catch (e) {
       debugPrint('Error loading stops in AppState: $e');
     } finally {
@@ -57,5 +62,25 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('refreshRate', seconds);
+  }
+
+  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode get themeMode => _themeMode;
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('themeMode', mode.index);
+  }
+
+  bool _isAmoledMode = false;
+  bool get isAmoledMode => _isAmoledMode;
+
+  Future<void> setAmoledMode(bool value) async {
+    _isAmoledMode = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isAmoledMode', value);
   }
 }

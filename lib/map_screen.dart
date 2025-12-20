@@ -84,7 +84,10 @@ class _MapScreenState extends State<MapScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: Theme.of(context).brightness == Brightness.dark
+                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c'],
                 userAgentPackageName: 'com.example.sivastopus',
               ),
               MarkerLayer(
@@ -95,9 +98,9 @@ class _MapScreenState extends State<MapScreen> {
                       point: _userLocation!,
                       width: 60,
                       height: 60,
-                      child: const Icon(
+                      child: Icon(
                         Icons.my_location,
-                        color: Colors.blue,
+                        color: Theme.of(context).colorScheme.tertiary,
                         size: 30,
                       ),
                     ),
@@ -105,25 +108,32 @@ class _MapScreenState extends State<MapScreen> {
                   ...stops.where((s) => s.lat != 0 && s.lng != 0).map((stop) {
                     return Marker(
                       point: LatLng(stop.lat, stop.lng),
-                      width: 40,
-                      height: 40,
+                      width: 24,
+                      height: 24,
                       child: GestureDetector(
                         onTap: () {
                           _showStopDetails(context, stop);
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.9),
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[700]
+                                : Theme.of(context).colorScheme.primary,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: const [
-                              BoxShadow(color: Colors.black26, blurRadius: 4),
-                            ],
+                            border: Border.all(
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.grey[800]!
+                                  : Colors.white,
+                              width: 1,
+                            ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.directions_bus,
                             color: Colors.white,
-                            size: 20,
+                            size: 14,
                           ),
                         ),
                       ),

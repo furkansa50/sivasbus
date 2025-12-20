@@ -118,6 +118,9 @@ class _StopDetailScreenState extends State<StopDetailScreen> {
                           vertical: 8,
                         ),
                         elevation: 2,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF333333)
+                            : null,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -132,8 +135,10 @@ class _StopDetailScreenState extends State<StopDetailScreen> {
                                 alignment: Alignment.center,
                                 child: Text(
                                   arrival.lineCode,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                   ),
@@ -146,9 +151,14 @@ class _StopDetailScreenState extends State<StopDetailScreen> {
                                   children: [
                                     Text(
                                       arrival.lineName,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
+                                        color:
+                                            Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.white70
+                                            : Colors.black87,
                                       ),
                                     ),
                                     const SizedBox(height: 4),

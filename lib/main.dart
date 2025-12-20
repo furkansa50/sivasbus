@@ -33,29 +33,56 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Daha İyi Sivas Akıllı Duraklar',
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.dark,
+      themeMode: appState.themeMode,
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: appState.accentColor,
-          brightness: Brightness.dark,
-        ),
+        scaffoldBackgroundColor: appState.isAmoledMode
+            ? Colors.black
+            : const Color(0xFF121212),
+        colorScheme: (appState.accentColor.computeLuminance() < 0.05)
+            ? ColorScheme.dark(
+                primary: Colors.white,
+                secondary: Colors.grey,
+                surface: appState.isAmoledMode
+                    ? Colors.black
+                    : const Color(0xFF121212),
+                onSurface: Colors.white,
+                onPrimary: Colors.black,
+              )
+            : ColorScheme.fromSeed(
+                seedColor: appState.accentColor,
+                brightness: Brightness.dark,
+                surface: appState.isAmoledMode
+                    ? Colors.black
+                    : const Color(0xFF121212),
+              ),
         useMaterial3: true,
         appBarTheme: AppBarTheme(
           centerTitle: true,
           elevation: 0,
           backgroundColor: appState.accentColor,
-          foregroundColor: Colors.white,
+          foregroundColor: (appState.accentColor.computeLuminance() > 0.5)
+              ? Colors.black
+              : Colors.white,
         ),
       ),
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: appState.accentColor),
+        colorScheme: (appState.accentColor.computeLuminance() < 0.05)
+            ? const ColorScheme.light(
+                primary: Colors.black,
+                secondary: Colors.grey,
+                surface: Colors.white,
+                onSurface: Colors.black,
+              )
+            : ColorScheme.fromSeed(seedColor: appState.accentColor),
         useMaterial3: true,
         appBarTheme: AppBarTheme(
           centerTitle: true,
           elevation: 0,
           backgroundColor: appState.accentColor,
-          foregroundColor: Colors.white,
+          foregroundColor: (appState.accentColor.computeLuminance() > 0.5)
+              ? Colors.black
+              : Colors.white,
         ),
       ),
       home: isOnboardingCompleted
