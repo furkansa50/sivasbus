@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sivastopus/sivas_bus_service.dart';
 
 class AppState extends ChangeNotifier {
   Color _accentColor = Colors.red;
@@ -26,7 +27,29 @@ class AppState extends ChangeNotifier {
     _accentColor = color;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('accentColor', color.value);
+    await prefs.setInt('accentColor', color.toARGB32());
+  }
+
+  final SivasBusService _service = SivasBusService();
+  List<SmartStop> _stops = [];
+  bool _isLoadingStops = false;
+
+  List<SmartStop> get stops => _stops;
+  bool get isLoadingStops => _isLoadingStops;
+
+  Future<void> loadStops() async {
+    if (_isLoadingStops) return;
+    _isLoadingStops = true;
+    notifyListeners();
+
+    try {
+      _stops = await _service.fetchSmartStops();
+    } catch (e) {
+      debugPrint('Error loading stops in AppState: $e');
+    } finally {
+      _isLoadingStops = false;
+      notifyListeners();
+    }
   }
 
   Future<void> setRefreshRate(int seconds) async {

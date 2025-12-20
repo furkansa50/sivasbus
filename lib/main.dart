@@ -6,29 +6,61 @@ import 'package:sivastopus/map_screen.dart';
 import 'package:sivastopus/settings_screen.dart';
 import 'package:sivastopus/dashboard_screen.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sivastopus/onboarding_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final isOnboardingCompleted = prefs.getBool('isOnboardingCompleted') ?? false;
+
   runApp(
-    ChangeNotifierProvider(create: (_) => AppState(), child: const MyApp()),
+    ChangeNotifierProvider(
+      create: (_) => AppState(),
+      child: MyApp(isOnboardingCompleted: isOnboardingCompleted),
+    ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isOnboardingCompleted;
+  const MyApp({super.key, required this.isOnboardingCompleted});
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
 
     return MaterialApp(
-      title: 'Sivas Smart Stops',
+      title: 'Daha İyi Sivas Akıllı Duraklar',
       debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.dark,
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: appState.accentColor,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+        appBarTheme: AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: appState.accentColor,
+          foregroundColor: Colors.white,
+        ),
+      ),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: appState.accentColor),
         useMaterial3: true,
-        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+        appBarTheme: AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: appState.accentColor,
+          foregroundColor: Colors.white,
+        ),
       ),
-      home: const MainScreen(),
+      home: isOnboardingCompleted
+          ? const MainScreen()
+          : const OnboardingScreen(),
     );
   }
 }

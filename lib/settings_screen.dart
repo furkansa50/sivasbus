@@ -1,20 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sivastopus/app_state.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:sivastopus/constants.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  static const List<Color> _availableColors = [
-    Colors.red,
-    Colors.blue,
-    Colors.green,
-    Colors.purple,
-    Colors.orange,
-    Colors.teal,
-    Colors.pink,
-    Colors.indigo,
-  ];
+  // Softer, muted color palette - 12 colors for 2x6 grid
 
   @override
   Widget build(BuildContext context) {
@@ -24,38 +17,88 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Ayarlar')),
       body: ListView(
         children: [
-          _buildSectionHeader(context, 'Görünüm'),
-          ListTile(
-            title: const Text('Tema Rengi'),
-            subtitle: const Text('Uygulama genelinde kullanılan ana renk'),
-            trailing: CircleAvatar(
-              backgroundColor: appState.accentColor,
-              radius: 12,
-            ),
-            onTap: () {
-              _showColorPicker(context, appState);
-            },
-          ),
-          const Divider(),
-          _buildSectionHeader(context, 'Veri'),
-          ListTile(
-            title: const Text('Otomatik Yenileme Sıklığı'),
-            subtitle: Text('${appState.refreshRate} saniye'),
-            trailing: DropdownButton<int>(
-              value: appState.refreshRate,
-              underline: const SizedBox(),
-              items: const [
-                DropdownMenuItem(value: 30, child: Text('30 sn')),
-                DropdownMenuItem(value: 60, child: Text('1 dk')),
-                DropdownMenuItem(value: 120, child: Text('2 dk')),
-                DropdownMenuItem(value: 300, child: Text('5 dk')),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  appState.setRefreshRate(value);
-                }
+          _buildSectionHeader(context, 'Tema Rengi'),
+          // Inline color picker - 2x6 grid
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 6,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: appColors.length,
+              itemBuilder: (context, index) {
+                final colorItem = appColors[index];
+                final color = colorItem['color'] as Color;
+                final name = colorItem['name'] as String;
+                final isSelected = appState.accentColor.value == color.value;
+
+                return GestureDetector(
+                  onTap: () => appState.setAccentColor(color),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: isSelected
+                              ? Border.all(color: Colors.white, width: 2)
+                              : Border.all(
+                                  color: Colors.grey.shade700,
+                                  width: 1,
+                                ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: color.withOpacity(0.5),
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: isSelected
+                            ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 20,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: isSelected ? Colors.white : Colors.grey,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
               },
             ),
+          ),
+          const Divider(height: 32),
+          _buildSectionHeader(context, 'Hakkında'),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('Daha İyi Sivas Akıllı Duraklar'),
+            subtitle: const Text('furkansa50 tarafından geliştirildi'),
+            onTap: () => _showAboutDialog(context),
           ),
         ],
       ),
@@ -70,58 +113,91 @@ class SettingsScreen extends StatelessWidget {
         style: TextStyle(
           color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.bold,
+          fontSize: 14,
         ),
       ),
     );
   }
 
-  void _showColorPicker(BuildContext context, AppState appState) {
-    showModalBottomSheet(
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
       context: context,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          height: 200,
+      builder: (context) => Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Renk Seçin',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              // Logo
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SvgPicture.asset(
+                  'assets/sivas_belediyesi_logo.svg',
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.contain,
+                  placeholderBuilder: (context) => Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.directions_bus,
+                      size: 50,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
+              Text(
+                'Sivas Akıllı Durak',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Versiyon 1.0.0',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Geliştirici: furkansa50',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Sivas Belediyesi Akıllı Durak verilerini kullanarak\notobüs varış sürelerini gösteren uygulama.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                    onPressed: () => showLicensePage(
+                      context: context,
+                      applicationName: 'Sivas Akıllı Durak',
+                      applicationVersion: '1.0.0',
+                    ),
+                    child: const Text('Lisanslar'),
                   ),
-                  itemCount: _availableColors.length,
-                  itemBuilder: (context, index) {
-                    final color = _availableColors[index];
-                    return GestureDetector(
-                      onTap: () {
-                        appState.setAccentColor(color);
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: appState.accentColor == color
-                              ? Border.all(color: Colors.black, width: 2)
-                              : null,
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Kapat'),
+                  ),
+                ],
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
