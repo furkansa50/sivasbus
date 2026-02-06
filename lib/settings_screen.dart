@@ -75,7 +75,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: const Text('AMOLED Karanlığı'),
                     subtitle: const Text('Tam siyah tema'),
                     value: appState.isAmoledMode,
-                    activeColor: Colors.white,
                     activeTrackColor: Colors.grey,
                     onChanged: (val) => appState.setAmoledMode(val),
                   ),
@@ -102,7 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final colorItem = appColors[index];
                 final color = colorItem['color'] as Color;
                 final name = colorItem['name'] as String;
-                final isSelected = appState.accentColor.value == color.value;
+                final isSelected = appState.accentColor == color;
 
                 return GestureDetector(
                   onTap: () => appState.setAccentColor(color),
@@ -124,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: color.withOpacity(0.5),
+                                    color: color.withValues(alpha: 0.5),
                                     blurRadius: 6,
                                     spreadRadius: 1,
                                   ),

@@ -88,8 +88,9 @@ class SivasBusService {
 
       if (duraksMatch == null) {
         debugPrint('Could not find duraks variable in HTML');
-        if (!forceRefresh)
+        if (!forceRefresh) {
           return []; // If we failed to fetch and didn't force, maybe return empty or cached from before?
+        }
         // Actually if we are here we failed to fetch new data.
         return [];
       }

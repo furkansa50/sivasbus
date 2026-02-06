@@ -233,7 +233,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             children: appColors.map((colorItem) {
               final Color color = colorItem['color'];
               final String name = colorItem['name'];
-              final bool isSelected = appState.accentColor.value == color.value;
+              final bool isSelected = appState.accentColor == color;
 
               return Column(
                 mainAxisSize: MainAxisSize.min,
@@ -259,7 +259,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         boxShadow: [
                           if (isSelected)
                             BoxShadow(
-                              color: color.withOpacity(0.4),
+                              color: color.withValues(alpha: 0.4),
                               blurRadius: 8,
                               spreadRadius: 2,
                             ),
@@ -357,7 +357,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         boxShadow: [
           if (isActive)
             BoxShadow(
-              color: appState.accentColor.withOpacity(0.4),
+              color: appState.accentColor.withValues(alpha: 0.4),
               blurRadius: 4,
               spreadRadius: 1,
             ),

@@ -60,7 +60,7 @@ class _StopDetailScreenState extends State<StopDetailScreen> {
               padding: const EdgeInsets.all(16),
               color: Theme.of(
                 context,
-              ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -179,8 +179,8 @@ class _StopDetailScreenState extends State<StopDetailScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: arrival.timeRemaining.contains('dk')
-                                      ? Colors.green.withOpacity(0.1)
-                                      : Colors.orange.withOpacity(0.1),
+                                      ? Colors.green.withValues(alpha: 0.1)
+                                      : Colors.orange.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color: arrival.timeRemaining.contains('dk')

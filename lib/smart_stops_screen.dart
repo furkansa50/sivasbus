@@ -219,9 +219,8 @@ class _SmartStopsScreenState extends State<SmartStopsScreen> {
                   elevation: 0,
                   color: Theme.of(context).brightness == Brightness.dark
                       ? const Color(0xFF333333)
-                      : Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      : Theme.of(context).colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
