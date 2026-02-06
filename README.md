@@ -16,13 +16,44 @@ Sivas Belediyesi akıllı durak verilerini kullanarak otobüs varış sürelerin
 
 ## Kurulum
 
-### Gereksinimler
-- Flutter SDK 3.10+
-- Android Studio / VS Code
-- Android veya iOS cihaz/emülatör
+### 1. Flutter SDK Kurulumu
 
-### Adımlar
+#### Linux
+```bash
+# Flutter SDK'yı indir
+cd ~
+git clone https://github.com/flutter/flutter.git -b stable
 
+# PATH'e ekle (~/.bashrc veya ~/.zshrc dosyasına ekle)
+export PATH="$PATH:$HOME/flutter/bin"
+
+# Değişiklikleri uygula
+source ~/.bashrc
+```
+
+#### Windows
+1. [Flutter SDK](https://docs.flutter.dev/get-started/install/windows) indir
+2. `C:\flutter` klasörüne çıkar
+3. Sistem Ortam Değişkenleri → Path → `C:\flutter\bin` ekle
+
+#### macOS
+```bash
+# Homebrew ile
+brew install --cask flutter
+
+# Veya manuel
+cd ~
+git clone https://github.com/flutter/flutter.git -b stable
+export PATH="$PATH:$HOME/flutter/bin"
+```
+
+### 2. Kurulumu Doğrula
+```bash
+flutter doctor
+```
+Tüm bileşenlerin yeşil tik (✓) gösterdiğinden emin ol.
+
+### 3. Projeyi Klonla ve Çalıştır
 ```bash
 # Repoyu klonla
 git clone https://github.com/furkansa50/sivasbus.git
@@ -31,8 +62,37 @@ cd sivasbus
 # Bağımlılıkları yükle
 flutter pub get
 
-# Uygulamayı çalıştır
+# Uygulamayı çalıştır (debug mode)
 flutter run
+```
+
+### 4. Release Build Oluşturma
+
+#### Android APK
+```bash
+# APK oluştur
+flutter build apk --release
+
+# Çıktı: build/app/outputs/flutter-apk/app-release.apk
+```
+
+#### Android App Bundle (Play Store için)
+```bash
+flutter build appbundle --release
+
+# Çıktı: build/app/outputs/bundle/release/app-release.aab
+```
+
+#### iOS (macOS gerekir)
+```bash
+flutter build ios --release
+```
+
+#### Web
+```bash
+flutter build web --release
+
+# Çıktı: build/web/
 ```
 
 ## Kullanılan Teknolojiler
