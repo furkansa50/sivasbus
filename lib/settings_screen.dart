@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sivastopus/app_state.dart';
 
-class SettingsScreen extends StatelessWidget {
+import 'package:sivastopus/constants.dart';
+import 'dart:async';
+
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
-  static const List<Color> _availableColors = [
-    Colors.red,
-    Colors.blue,
-    Colors.green,
-    Colors.purple,
-    Colors.orange,
-    Colors.teal,
-    Colors.pink,
-    Colors.indigo,
-  ];
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  int _darkTapCount = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -25,41 +24,176 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           _buildSectionHeader(context, 'Görünüm'),
-          ListTile(
-            title: const Text('Tema Rengi'),
-            subtitle: const Text('Uygulama genelinde kullanılan ana renk'),
-            trailing: CircleAvatar(
-              backgroundColor: appState.accentColor,
-              radius: 12,
-            ),
-            onTap: () {
-              _showColorPicker(context, appState);
-            },
-          ),
-          const Divider(),
-          _buildSectionHeader(context, 'Veri'),
-          ListTile(
-            title: const Text('Otomatik Yenileme Sıklığı'),
-            subtitle: Text('${appState.refreshRate} saniye'),
-            trailing: DropdownButton<int>(
-              value: appState.refreshRate,
-              underline: const SizedBox(),
-              items: const [
-                DropdownMenuItem(value: 30, child: Text('30 sn')),
-                DropdownMenuItem(value: 60, child: Text('1 dk')),
-                DropdownMenuItem(value: 120, child: Text('2 dk')),
-                DropdownMenuItem(value: 300, child: Text('5 dk')),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                SegmentedButton<ThemeMode>(
+                  segments: [
+                    const ButtonSegment<ThemeMode>(
+                      value: ThemeMode.system,
+                      label: Text('Sistem'),
+                      icon: Icon(Icons.brightness_auto),
+                    ),
+                    const ButtonSegment<ThemeMode>(
+                      value: ThemeMode.light,
+                      label: Text('Aydınlık'),
+                      icon: Icon(Icons.wb_sunny),
+                    ),
+                    ButtonSegment<ThemeMode>(
+                      value: ThemeMode.dark,
+                      label: GestureDetector(
+                        onTap: () {
+                          if (appState.themeMode == ThemeMode.dark) {
+                            setState(() {
+                              _darkTapCount++;
+                            });
+                          } else {
+                            appState.setThemeMode(ThemeMode.dark);
+                          }
+                        },
+                        child: const Text('Karanlık'),
+                      ),
+                      icon: const Icon(Icons.nightlight_round),
+                    ),
+                  ],
+                  selected: {appState.themeMode},
+                  onSelectionChanged: (Set<ThemeMode> newSelection) {
+                    appState.setThemeMode(newSelection.first);
+                    // Reset tap count on mode change
+                    if (newSelection.first != ThemeMode.dark) {
+                      setState(() {
+                        _darkTapCount = 0;
+                      });
+                    }
+                  },
+                ),
+                if ((appState.isAmoledMode || _darkTapCount >= 3) &&
+                    appState.themeMode == ThemeMode.dark) ...[
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text('AMOLED Karanlığı'),
+                    subtitle: const Text('Tam siyah tema'),
+                    value: appState.isAmoledMode,
+                    activeTrackColor: Colors.grey,
+                    onChanged: (val) => appState.setAmoledMode(val),
+                  ),
+                ],
               ],
-              onChanged: (value) {
-                if (value != null) {
-                  appState.setRefreshRate(value);
-                }
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildSectionHeader(context, 'Tema Rengi'),
+          // Inline color picker - 1x6 grid (simplified from 2x6)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 6,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: appColors.length,
+              itemBuilder: (context, index) {
+                final colorItem = appColors[index];
+                final color = colorItem['color'] as Color;
+                final name = colorItem['name'] as String;
+                final isSelected = appState.accentColor == color;
+
+                return GestureDetector(
+                  onTap: () => appState.setAccentColor(color),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: isSelected
+                              ? Border.all(color: Colors.white, width: 2)
+                              : Border.all(
+                                  color: Colors.grey.shade700,
+                                  width: 1,
+                                ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: color.withValues(alpha: 0.5),
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: isSelected
+                            ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 20,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: isSelected ? Colors.white : Colors.grey,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
               },
             ),
+          ),
+          const Divider(height: 32),
+          _buildSectionHeader(context, 'Hakkında'),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('Sivas Akıllı Durak'),
+            subtitle: const Text('furkansa50 tarafından geliştirildi'),
+            onTap: () => _handleAboutTap(context),
           ),
         ],
       ),
     );
+  }
+
+  int _aboutTapCount = 0;
+  Timer? _aboutTapTimer;
+
+  void _handleAboutTap(BuildContext context) {
+    _aboutTapCount++;
+    if (_aboutTapTimer != null) {
+      _aboutTapTimer!.cancel();
+    }
+    _aboutTapTimer = Timer(const Duration(milliseconds: 500), () {
+      _aboutTapCount = 0;
+    });
+
+    if (_aboutTapCount >= 3) {
+      _aboutTapCount = 0;
+      if (_aboutTapTimer != null) {
+        _aboutTapTimer!.cancel();
+      }
+      showLicensePage(
+        context: context,
+        applicationName: 'Sivas Akıllı Durak',
+        applicationVersion: '1.0.0',
+      );
+    }
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
@@ -70,58 +204,9 @@ class SettingsScreen extends StatelessWidget {
         style: TextStyle(
           color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.bold,
+          fontSize: 14,
         ),
       ),
-    );
-  }
-
-  void _showColorPicker(BuildContext context, AppState appState) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          height: 200,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Renk Seçin',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: _availableColors.length,
-                  itemBuilder: (context, index) {
-                    final color = _availableColors[index];
-                    return GestureDetector(
-                      onTap: () {
-                        appState.setAccentColor(color);
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: appState.accentColor == color
-                              ? Border.all(color: Colors.black, width: 2)
-                              : null,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

@@ -5,6 +5,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'package:sivastopus/sivas_bus_service.dart';
+import 'package:provider/provider.dart';
+import 'package:sivastopus/app_state.dart';
 
 import 'package:sivastopus/stop_detail_screen.dart';
 
@@ -18,16 +20,19 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final SivasBusService _service = SivasBusService();
-  late Future<List<SmartStop>> _stopsFuture;
   LatLng? _userLocation;
   static const LatLng _centerSivas = LatLng(39.75, 37.015);
 
   @override
   void initState() {
     super.initState();
-    _stopsFuture = _service.fetchSmartStops();
     _determinePosition();
+    // Load stops if empty
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.read<AppState>().stops.isEmpty) {
+        context.read<AppState>().loadStops();
+      }
+    });
   }
 
   Future<void> _determinePosition() async {
@@ -53,73 +58,142 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final stops = appState.stops;
+    final nearbyStops = _getNearbyStops(stops, 3);
+    final allStopsPreview = stops.take(3).toList();
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sivas Akıllı Duraklar'),
-        centerTitle: true,
-      ),
-      body: FutureBuilder<List<SmartStop>>(
-        future: _stopsFuture,
-        builder: (context, snapshot) {
-          final stops = snapshot.data ?? [];
-          final nearbyStops = _getNearbyStops(stops, 3);
-          final allStopsPreview = stops.take(3).toList();
-
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Map Preview Section
-                _buildMapPreview(context),
-
-                const SizedBox(height: 16),
-
-                // Nearby Stops Section
-                _buildSectionHeader(
-                  context,
-                  'Yakındaki Duraklar',
-                  () => widget.onNavigateToTab(
-                    1,
-                  ), // Navigate to Stops List (Tab 1)
-                  // In a real app we might pass a filter argument
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: CustomScrollView(
+          slivers: [
+            // SliverAppBar with logo that expands on pull
+            SliverAppBar(
+              expandedHeight: 80,
+              floating: false,
+              pinned: true,
+              stretch: true,
+              backgroundColor: Color.lerp(
+                Theme.of(context).colorScheme.primary,
+                Colors.black,
+                0.8,
+              ), // Much darker
+              flexibleSpace: FlexibleSpaceBar(
+                centerTitle: true,
+                titlePadding: const EdgeInsets.only(bottom: 16),
+                title: const Text(
+                  'Sivas Akıllı Duraklar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
+                    color: Colors.white,
+                  ),
                 ),
-                if (snapshot.hasData)
-                  ...nearbyStops.map(
-                    (stop) => _buildStopCard(context, stop, true),
+                background: Container(
+                  color: Color.lerp(
+                    Theme.of(context).colorScheme.primary,
+                    Colors.black,
+                    0.8,
                   ),
-                if (!snapshot.hasData)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-
-                const SizedBox(height: 16),
-
-                // All Stops Section
-                _buildSectionHeader(
-                  context,
-                  'Tüm Duraklar',
-                  () => widget.onNavigateToTab(
-                    1,
-                  ), // Navigate to Stops List (Tab 1)
                 ),
-                if (snapshot.hasData)
-                  ...allStopsPreview.map(
-                    (stop) => _buildStopCard(context, stop, false),
-                  ),
-
-                const SizedBox(height: 32),
-              ],
+              ),
             ),
-          );
-        },
+            // Content
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+
+                  // Empty State / Loading Handling
+                  if (stops.isEmpty)
+                    if (appState.isLoadingStops)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Duraklar yüklenemedi.',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 16),
+                            FilledButton.icon(
+                              onPressed: _refreshData,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Tekrar Dene'),
+                            ),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
+                      )
+                  else ...[
+                    // Map Preview Section
+                    _buildMapPreview(context, stops),
+
+                    const SizedBox(height: 16),
+
+                    // Nearby Stops Section
+                    _buildSectionHeader(
+                      context,
+                      'Yakındaki Duraklar',
+                      () => widget.onNavigateToTab(1),
+                    ),
+                    if (nearbyStops.isNotEmpty)
+                      ...nearbyStops.map(
+                        (stop) => _buildStopCard(context, stop, true),
+                      ),
+
+                    const SizedBox(height: 16),
+
+                    // All Stops Section
+                    _buildSectionHeader(
+                      context,
+                      'Tüm Duraklar',
+                      () => widget.onNavigateToTab(1),
+                    ),
+                    if (allStopsPreview.isNotEmpty)
+                      ...allStopsPreview.map(
+                        (stop) => _buildStopCard(context, stop, false),
+                      ),
+                  ],
+
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMapPreview(BuildContext context) {
+  Future<void> _refreshData() async {
+    await context.read<AppState>().loadStops(forceRefresh: true);
+  }
+
+  Widget _buildMapPreview(BuildContext context, List<SmartStop> stops) {
+    // Get stops with valid coordinates for preview
+    final validStops = stops
+        .where((s) => s.lat != 0 && s.lng != 0)
+        .take(20)
+        .toList();
+
     return GestureDetector(
       onTap: () => widget.onNavigateToTab(2), // Navigate to Map Tab (Tab 2)
       child: Container(
@@ -127,10 +201,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -141,19 +215,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             IgnorePointer(
               child: FlutterMap(
+                key: ValueKey('map_${validStops.length}'),
                 options: MapOptions(
                   initialCenter: _userLocation ?? _centerSivas,
                   initialZoom: 13.0,
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate: Theme.of(context).brightness == Brightness.dark
+                        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                    subdomains: const ['a', 'b', 'c'],
                     userAgentPackageName: 'com.example.sivastopus',
                   ),
-                  if (_userLocation != null)
-                    MarkerLayer(
-                      markers: [
+                  MarkerLayer(
+                    markers: [
+                      // User location marker
+                      if (_userLocation != null)
                         Marker(
                           point: _userLocation!,
                           width: 40,
@@ -163,8 +241,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             color: Colors.blue,
                           ),
                         ),
-                      ],
-                    ),
+                      // Stop markers
+                      ...validStops.map(
+                        (stop) => Marker(
+                          point: LatLng(stop.lat, stop.lng),
+                          width: 20,
+                          height: 20,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.grey[600]!
+                                    : Colors.white,
+                                width: 1,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.directions_bus,
+                              color: Colors.white,
+                              size: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -254,7 +363,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      color: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF333333)
+          : Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: CircleAvatar(

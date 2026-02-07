@@ -6,29 +6,88 @@ import 'package:sivastopus/map_screen.dart';
 import 'package:sivastopus/settings_screen.dart';
 import 'package:sivastopus/dashboard_screen.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sivastopus/onboarding_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final isOnboardingCompleted = prefs.getBool('isOnboardingCompleted') ?? false;
+
   runApp(
-    ChangeNotifierProvider(create: (_) => AppState(), child: const MyApp()),
+    ChangeNotifierProvider(
+      create: (_) => AppState(),
+      child: MyApp(isOnboardingCompleted: isOnboardingCompleted),
+    ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isOnboardingCompleted;
+  const MyApp({super.key, required this.isOnboardingCompleted});
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
 
     return MaterialApp(
-      title: 'Sivas Smart Stops',
+      title: 'Daha İyi Sivas Akıllı Duraklar',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: appState.accentColor),
+      themeMode: appState.themeMode,
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: appState.isAmoledMode
+            ? Colors.black
+            : const Color(0xFF121212),
+        colorScheme: (appState.accentColor.computeLuminance() < 0.05)
+            ? ColorScheme.dark(
+                primary: Colors.white,
+                secondary: Colors.grey,
+                surface: appState.isAmoledMode
+                    ? Colors.black
+                    : const Color(0xFF121212),
+                onSurface: Colors.white,
+                onPrimary: Colors.black,
+              )
+            : ColorScheme.fromSeed(
+                seedColor: appState.accentColor,
+                brightness: Brightness.dark,
+                surface: appState.isAmoledMode
+                    ? Colors.black
+                    : const Color(0xFF121212),
+              ),
         useMaterial3: true,
-        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+        appBarTheme: AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: appState.accentColor,
+          foregroundColor: (appState.accentColor.computeLuminance() > 0.5)
+              ? Colors.black
+              : Colors.white,
+        ),
       ),
-      home: const MainScreen(),
+      theme: ThemeData(
+        colorScheme: (appState.accentColor.computeLuminance() < 0.05)
+            ? const ColorScheme.light(
+                primary: Colors.black,
+                secondary: Colors.grey,
+                surface: Colors.white,
+                onSurface: Colors.black,
+              )
+            : ColorScheme.fromSeed(seedColor: appState.accentColor),
+        useMaterial3: true,
+        appBarTheme: AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: appState.accentColor,
+          foregroundColor: (appState.accentColor.computeLuminance() > 0.5)
+              ? Colors.black
+              : Colors.white,
+        ),
+      ),
+      home: isOnboardingCompleted
+          ? const MainScreen()
+          : const OnboardingScreen(),
     );
   }
 }

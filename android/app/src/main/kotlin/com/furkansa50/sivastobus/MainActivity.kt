@@ -1,4 +1,4 @@
-package com.example.sivastopus
+package com.furkansa50.sivastobus
 
 import io.flutter.embedding.android.FlutterActivity
 
